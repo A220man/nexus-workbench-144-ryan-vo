@@ -1,0 +1,45 @@
+# Dependencies
+.venv/
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local agent metadata (not product source)
+.omp/
+.antigravitycli/
+
+# Logs
+*.log
+
+# Docker
+.docker/

@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexus-workbench"
+version = "1.0.0"
+description = "Run frontier MoE models on hardware you already own — pure C, zero deps, experts streamed from disk."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+authors = [
+    {name = "Ryan Vo", email = "ryandtvo@gmail.com"}
+]
+maintainers = [
+    {name = "Ryan Vo", email = "ryandtvo@gmail.com"}
+]
+keywords = ["moe", "llm", "inference", "ai", "machine-learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.32.0",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.5.0",
+    "httpx==0.28.1",
+    "python-multipart==0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "pytest-asyncio==0.23.8",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["app*"]

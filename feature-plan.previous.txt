@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "current_feature": "skeleton",
+  "features": [
+    {
+      "id": "skeleton",
+      "title": "FastAPI/React skeleton with install steps and tests",
+      "status": "done",
+      "acceptance": [
+        "backend/app/main.py exports FastAPI app with health endpoint",
+        "frontend/package.json with React+TypeScript+Vite, build/test scripts",
+        "compose.yaml with backend, frontend, Keycloak services",
+        "README with exact install/run/test steps",
+        "pytest backend tests pass",
+        "npm run build && npm test pass"
+      ],
+      "implementation": [
+        "backend/app/main.py",
+        "backend/app/api/health.py",
+        "backend/app/api/models.py",
+        "backend/app/api/chat.py",
+        "backend/app/api/cache.py",
+        "backend/app/services/cache.py",
+        "backend/app/services/model.py",
+        "backend/app/services/compression.py",
+        "backend/app/core/config.py",
+        "backend/requirements.txt",
+        "backend/Dockerfile",
+        "backend/tests/test_health.py",
+        "backend/tests/test_models.py",
+        "backend/tests/test_cache.py",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "frontend/tsconfig.json",
+        "frontend/tsconfig.node.json",
+        "frontend/vite.config.ts",
+        "frontend/index.html",
+        "frontend/src/main.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/index.css",
+        "frontend/src/components/StatusBadge.tsx",
+        "frontend/src/api/client.ts",
+        "frontend/src/types/index.ts",
+        "frontend/src/test/setup.ts",
+        "frontend/src/App.test.tsx",
+        "frontend/Dockerfile",
+        "frontend/nginx.conf",
+        "compose.yaml",
+        "keycloak/realm.json",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md",
+        "pyproject.toml",
+        "portfolio.json",
+        ".gitignore",
+        ".env.example",
+        ".github/workflows/ci.yml"
+      ],
+      "tests": [
+        "backend/tests/test_health.py",
+        "backend/tests/test_models.py",
+        "backend/tests/test_cache.py",
+        "frontend/src/App.test.tsx"
+      ]
+    },
+    {
+      "id": "expert_cache",
+      "title": "Expert cache with LRU/LFRU placement and gate-momentum policy",
+      "status": "planned",
+      "acceptance": [
+        "Core cache engine with configurable placement policies",
+        "Gate-momentum scoring for expert preloading",
+        "Per-layer expert tracking and hit/miss metrics"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "compression",
+      "title": "Lossless entropy compression for streamed expert traffic",
+      "status": "planned",
+      "acceptance": [
+        "coli compress CLI for one-time preparation pass",
+        "Per-expert rANS encoding with shared static table",
+        "Runtime decompression at cache-fill (COLI_ZSTREAM=1)",
+        "Bit-exact verification against original weights"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "pilot_prefetch",
+      "title": "Multi-threaded PILOT prefetch with queue-depth optimization",
+      "status": "planned",
+      "acceptance": [
+        "Multiple pilot worker threads for NVMe queue-depth > 1",
+        "DIRECT=1 forces PILOT_REAL, skips WILLNEED hint path",
+        "Configurable worker count via PIPE_WORKERS env"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "speculative_decode",
+      "title": "Token-exact speculative decode with draft verification",
+      "status": "planned",
+      "acceptance": [
+        "MTP draft generation and batched verification",
+        "CPU/GPU token-exact parity at high acceptance rates",
+        "Near-tie handling matching CPU reference"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "vulkan_backend",
+      "title": "Vulkan backend with memory budget management",
+      "status": "planned",
+      "acceptance": [
+        "Vulkan expert tier with adaptive memory budget",
+        "Dense chain on GPU with VRAM pressure proofing",
+        "Memory allocation error handling and fallback"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "web_ui",
+      "title": "Web dashboard with chat, model config, and profiling",
+      "status": "planned",
+      "acceptance": [
+        "Chat interface with streaming responses",
+        "Model selection and parameter configuration",
+        "Real-time profiling dashboard (tokens/s, cache hit rate, VRAM)"
+      ],
+      "implementation": [],
+      "tests": []
+    }
+  ]
+}
