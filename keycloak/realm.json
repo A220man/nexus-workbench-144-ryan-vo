@@ -1,0 +1,82 @@
+{
+  "realm": "nexus",
+  "enabled": true,
+  "displayName": "Nexus Workbench",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "clients": [
+    {
+      "clientId": "nexus-workbench",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "role mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "roles",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "viewer",
+        "description": "Read-only access to models and cache"
+      },
+      {
+        "name": "operator",
+        "description": "Can start inference and manage cache policies"
+      },
+      {
+        "name": "admin",
+        "description": "Full administrative access"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "User",
+      "email": "demo@example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["viewer", "operator"]
+    }
+  ]
+}

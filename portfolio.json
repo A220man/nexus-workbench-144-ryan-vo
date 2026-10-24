@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "nexus-workbench-144-ryan-vo",
+  "owner": "A220man",
+  "email": "ryandtvo@gmail.com",
+  "domain": "AI/ML developer tools",
+  "summary": "Work in progress: nexus-workbench-144-ryan-vo",
+  "workflows": [
+    "Configure and launch MoE model inference with expert streaming from NVMe",
+    "Monitor expert cache hit rates and switch placement policies (LRU, gate-momentum, LFRU) in real-time",
+    "Chat with streaming MoE models via OpenAI-compatible API with speculative decode"
+  ],
+  "auth": "oidc-keycloak-saml-broker",
+  "llm_providers": [
+    "openai-compatible",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "status": "work-in-progress"
+}
