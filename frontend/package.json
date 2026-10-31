@@ -2,7 +2,11 @@
   "name": "nexus-workbench-frontend",
   "version": "1.0.0",
   "description": "Nexus Workbench - Web dashboard for MoE model inference",
-  "author": "Ryan Vo <ryandtvo@gmail.com>",
+  "author": {
+    "name": "Ryan Vo",
+    "email": "ryandtvo@gmail.com",
+    "url": "https://github.com/A220man"
+  },
   "private": true,
   "type": "module",
   "scripts": {

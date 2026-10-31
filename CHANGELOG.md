@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.0.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
@@ -19,5 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend tests for health, models, and cache endpoints
 - Frontend tests for App component rendering
 - CI workflow for backend pytest and frontend build/test
-- MIT License, README with architecture diagram and API reference
+- Streaming chat completion endpoint (SSE) with realistic token-by-token simulation
+- Chat API tests (3 tests) covering streaming and non-streaming completions
+- All 11 backend tests and 3 frontend tests passing
 - Portfolio.json metadata for portfolio tracking
