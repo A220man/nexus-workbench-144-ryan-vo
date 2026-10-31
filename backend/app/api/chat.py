@@ -60,10 +60,32 @@ async def create_completion(request: ChatRequest):
 async def create_completion_stream(request: ChatRequest):
     """Create a streaming chat completion."""
     async def event_generator():
-        yield {"data": "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"}
-        await asyncio.sleep(0.1)
-        yield {"data": "data: {\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n"}
-        await asyncio.sleep(0.1)
-        yield {"data": "data: [DONE]\n\n"}
+        # Simulate realistic token streaming
+        # In production, this would connect to the actual inference engine
+        full_response = "This is a simulated streaming response from the Nexus Workbench inference engine. Each token is yielded as it's generated, demonstrating the SSE streaming capability."
+        
+        # Send initial role
+        yield {
+            "event": "message",
+            "data": '{"choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}'
+        }
+        
+        # Stream tokens word by word with small delays
+        words = full_response.split()
+        for i, word in enumerate(words):
+            token = word + (" " if i < len(words) - 1 else "")
+            yield {
+                "event": "message",
+                "data": f'{{"choices":[{{"index":0,"delta":{{"content":"{token}"}},"finish_reason":null}}]}}'
+            }
+            await asyncio.sleep(0.05)  # Simulate generation latency
+        
+        # Send done signal
+        yield {
+            "event": "message",
+            "data": "[DONE]"
+        }
 
     return EventSourceResponse(event_generator())
+
+
