@@ -2,6 +2,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import create_app
+from app.services.cache import get_cache
 
 
 @pytest.fixture
@@ -35,6 +36,7 @@ async def test_get_cache_stats(client: AsyncClient):
     assert "total_requests" in data
     assert "hits" in data
     assert "misses" in data
+    assert "layer_stats" in data
 
 
 @pytest.mark.asyncio
@@ -55,3 +57,27 @@ async def test_disable_policy(client: AsyncClient):
     data = response.json()
     assert data["policy"] == "lru"
     assert data["enabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_layer_stats(client: AsyncClient):
+    """Test getting layer-specific statistics."""
+    # First make some requests to populate layer stats
+    cache = get_cache()
+    cache.put(0, 0, b"test data", gate_score=0.5)
+    cache.get(0, 0)
+    
+    response = await client.get("/api/v1/cache/stats/layer/0")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["layer"] == 0
+    assert "hits" in data
+    assert "misses" in data
+    assert "hit_rate" in data
+
+
+@pytest.mark.asyncio
+async def test_get_layer_stats_not_found(client: AsyncClient):
+    """Test getting stats for non-existent layer."""
+    response = await client.get("/api/v1/cache/stats/layer/999")
+    assert response.status_code == 404

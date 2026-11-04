@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "skeleton",
+  "current_feature": "expert_cache",
   "features": [
     {
       "id": "skeleton",
@@ -66,14 +66,19 @@
     {
       "id": "expert_cache",
       "title": "Expert cache with LRU/LFRU placement and gate-momentum policy",
-      "status": "planned",
+      "status": "in_progress",
       "acceptance": [
         "Core cache engine with configurable placement policies",
         "Gate-momentum scoring for expert preloading",
         "Per-layer expert tracking and hit/miss metrics"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "backend/app/services/cache.py",
+        "backend/app/api/cache.py"
+      ],
+      "tests": [
+        "backend/tests/test_cache.py"
+      ]
     },
     {
       "id": "compression",
