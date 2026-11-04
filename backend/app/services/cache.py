@@ -4,7 +4,7 @@ import threading
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 
 class PlacementPolicy(Enum):
@@ -28,6 +28,22 @@ class ExpertSlot:
 
 
 @dataclass
+class LayerStats:
+    """Per-layer cache statistics."""
+    layer: int
+    hits: int = 0
+    misses: int = 0
+    evictions: int = 0
+    current_size_mb: float = 0.0
+    expert_count: int = 0
+
+    @property
+    def hit_rate(self) -> float:
+        total = self.hits + self.misses
+        return (self.hits / total * 100) if total > 0 else 0.0
+
+
+@dataclass
 class CacheStats:
     """Cache statistics."""
     hit_rate: float = 0.0
@@ -37,6 +53,7 @@ class CacheStats:
     evictions: int = 0
     current_size_mb: float = 0.0
     max_size_mb: float = 0.0
+    layer_stats: Dict[int, LayerStats] = field(default_factory=dict)
 
 
 class ExpertCache:
@@ -49,6 +66,7 @@ class ExpertCache:
         self._policy = PlacementPolicy.LRU
         self._policy_enabled = True
         self._gate_momentum_history: Dict[Tuple[int, int], float] = {}
+        self._gate_momentum_decay: float = 0.95  # Decay factor for momentum
         self._stats = CacheStats(max_size_mb=max_size_mb)
 
     @property
@@ -74,15 +92,21 @@ class ExpertCache:
             key = (layer, expert_id)
             self._stats.total_requests += 1
 
+            # Initialize layer stats if needed
+            if layer not in self._stats.layer_stats:
+                self._stats.layer_stats[layer] = LayerStats(layer=layer)
+
             if key in self._slots:
                 slot = self._slots[key]
                 slot.last_access = time.time()
                 slot.access_count += 1
                 self._stats.hits += 1
+                self._stats.layer_stats[layer].hits += 1
                 self._update_hit_rate()
                 return slot.data
 
             self._stats.misses += 1
+            self._stats.layer_stats[layer].misses += 1
             self._update_hit_rate()
             return None
 
@@ -92,11 +116,16 @@ class ExpertCache:
             key = (layer, expert_id)
             size_mb = len(data) / (1024 * 1024)
 
+            # Initialize layer stats if needed
+            if layer not in self._stats.layer_stats:
+                self._stats.layer_stats[layer] = LayerStats(layer=layer)
+
             # Check if we need to evict
             while self._stats.current_size_mb + size_mb > self._max_size_mb and self._slots:
                 self._evict_one()
 
             # Add new slot
+            is_new = key not in self._slots
             self._slots[key] = ExpertSlot(
                 layer=layer,
                 expert_id=expert_id,
@@ -106,8 +135,15 @@ class ExpertCache:
             )
             self._stats.current_size_mb += size_mb
 
-            # Update gate momentum history
+            if is_new:
+                self._stats.layer_stats[layer].expert_count += 1
+                self._stats.layer_stats[layer].current_size_mb += size_mb
+
+            # Update gate momentum history with decay
             if self._policy == PlacementPolicy.GATE_MOMENTUM:
+                # Apply decay to existing momentum
+                for k in self._gate_momentum_history:
+                    self._gate_momentum_history[k] *= self._gate_momentum_decay
                 self._gate_momentum_history[key] = gate_score
 
     def _evict_one(self):
@@ -133,6 +169,12 @@ class ExpertCache:
         victim = self._slots.pop(victim_key)
         self._stats.current_size_mb -= victim.size_mb
         self._stats.evictions += 1
+        self._stats.layer_stats[victim.layer].evictions += 1
+        self._stats.layer_stats[victim.layer].expert_count -= 1
+        self._stats.layer_stats[victim.layer].current_size_mb -= victim.size_mb
+
+        # Remove from gate momentum history
+        self._gate_momentum_history.pop(victim_key, None)
 
     def _update_hit_rate(self):
         """Update hit rate statistic."""
@@ -150,7 +192,13 @@ class ExpertCache:
                 evictions=self._stats.evictions,
                 current_size_mb=self._stats.current_size_mb,
                 max_size_mb=self._stats.max_size_mb,
+                layer_stats=dict(self._stats.layer_stats),
             )
+
+    def get_layer_stats(self, layer: int) -> Optional[LayerStats]:
+        """Get statistics for a specific layer."""
+        with self._lock:
+            return self._stats.layer_stats.get(layer)
 
     def list_policies(self) -> List[Dict]:
         """List available policies with status."""
@@ -178,6 +226,11 @@ class ExpertCache:
             self._slots.clear()
             self._gate_momentum_history.clear()
             self._stats = CacheStats(max_size_mb=self._max_size_mb)
+
+    def set_gate_momentum_decay(self, decay: float):
+        """Set the gate momentum decay factor."""
+        with self._lock:
+            self._gate_momentum_decay = max(0.0, min(1.0, decay))
 
 
 # Global cache instance
