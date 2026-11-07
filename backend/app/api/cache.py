@@ -121,6 +121,3 @@ async def disable_policy(policy_name: str):
     # For now, disabling means reverting to LRU
     cache.set_policy("lru", enabled=True)
     return {"policy": policy_name, "enabled": False}
-</arg_key>
-<arg_key=i</arg_key>
-<arg_value>"Writing updated cache API"
