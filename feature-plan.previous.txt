@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "expert_cache",
+  "current_feature": "compression",
   "features": [
     {
       "id": "skeleton",
@@ -66,7 +66,7 @@
     {
       "id": "expert_cache",
       "title": "Expert cache with LRU/LFRU placement and gate-momentum policy",
-      "status": "in_progress",
+      "status": "done",
       "acceptance": [
         "Core cache engine with configurable placement policies",
         "Gate-momentum scoring for expert preloading",
@@ -83,7 +83,7 @@
     {
       "id": "compression",
       "title": "Lossless entropy compression for streamed expert traffic",
-      "status": "planned",
+      "status": "in_progress",
       "acceptance": [
         "coli compress CLI for one-time preparation pass",
         "Per-expert rANS encoding with shared static table",
