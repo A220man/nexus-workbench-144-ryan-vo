@@ -1,6 +1,8 @@
-"""Expert cache service with placement policies."""
+"""Expert cache service with placement policies and optional compression."""
 import time
 import threading
+import zlib
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -25,6 +27,7 @@ class ExpertSlot:
     last_access: float = field(default_factory=time.time)
     access_count: int = 0
     gate_score: float = 0.0
+    compressed: bool = False
 
 
 @dataclass
@@ -57,10 +60,11 @@ class CacheStats:
 
 
 class ExpertCache:
-    """Thread-safe expert cache with configurable placement policies."""
+    """Thread-safe expert cache with configurable placement policies and optional compression."""
 
     def __init__(self, max_size_mb: float = 8192.0):
         self._max_size_mb = max_size_mb
+        self._enable_compression = os.environ.get("COLI_ZSTREAM", "0") == "1"
         self._slots: Dict[Tuple[int, int], ExpertSlot] = {}
         self._lock = threading.RLock()
         self._policy = PlacementPolicy.LRU
@@ -86,6 +90,36 @@ class ExpertCache:
         except ValueError:
             raise ValueError(f"Unknown policy: {policy_name}")
 
+    def _should_compress(self, data: bytes) -> bool:
+        """Determine if data should be compressed based on size and policy."""
+        if not self._enable_compression:
+            return False
+        # Only compress data larger than 1KB
+        return len(data) > 1024
+
+    def _compress_data(self, data: bytes) -> tuple:
+        """Compress data using zlib. Returns (compressed_data, was_compressed)."""
+        if not self._enable_compression:
+            return data, False
+        # Only compress data larger than 1KB
+        if len(data) <= 1024:
+            return data, False
+        compressed = zlib.compress(data)
+        # Only use compressed version if it's actually smaller
+        if len(compressed) < len(data):
+            return compressed, True
+        return data, False
+
+    def _decompress_data(self, data: bytes) -> bytes:
+        """Decompress data using zlib."""
+        if not self._enable_compression:
+            return data
+        try:
+            return zlib.decompress(data)
+        except Exception:
+            # Fallback: return original if decompression fails
+            return data
+
     def get(self, layer: int, expert_id: int) -> Optional[bytes]:
         """Get expert data from cache."""
         with self._lock:
@@ -103,6 +137,10 @@ class ExpertCache:
                 self._stats.hits += 1
                 self._stats.layer_stats[layer].hits += 1
                 self._update_hit_rate()
+
+                # Return decompressed data if compressed
+                if slot.compressed:
+                    return self._decompress_data(slot.data)
                 return slot.data
 
             self._stats.misses += 1
@@ -120,24 +158,38 @@ class ExpertCache:
             if layer not in self._stats.layer_stats:
                 self._stats.layer_stats[layer] = LayerStats(layer=layer)
 
+            # Compress data if enabled and beneficial
+            compressed_data, was_compressed = self._compress_data(data)
+
+            # Use compressed size if we actually compressed
+            if was_compressed:
+                store_size_mb = len(compressed_data) / (1024 * 1024)
+                store_data = compressed_data
+            else:
+                store_size_mb = size_mb
+                store_data = data
+
             # Check if we need to evict
-            while self._stats.current_size_mb + size_mb > self._max_size_mb and self._slots:
+            while self._stats.current_size_mb + store_size_mb > self._max_size_mb and self._slots:
                 self._evict_one()
 
             # Add new slot
             is_new = key not in self._slots
+            slot_compressed = was_compressed and self._enable_compression
+
             self._slots[key] = ExpertSlot(
                 layer=layer,
                 expert_id=expert_id,
-                data=data,
-                size_mb=size_mb,
+                data=store_data,
+                size_mb=store_size_mb,
                 gate_score=gate_score,
+                compressed=slot_compressed,
             )
-            self._stats.current_size_mb += size_mb
+            self._stats.current_size_mb += store_size_mb
 
             if is_new:
                 self._stats.layer_stats[layer].expert_count += 1
-                self._stats.layer_stats[layer].current_size_mb += size_mb
+                self._stats.layer_stats[layer].current_size_mb += store_size_mb
 
             # Update gate momentum history with decay
             if self._policy == PlacementPolicy.GATE_MOMENTUM:
