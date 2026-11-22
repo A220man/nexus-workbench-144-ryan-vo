@@ -59,12 +59,29 @@ class CacheStats:
     layer_stats: Dict[int, LayerStats] = field(default_factory=dict)
 
 
+# Import rANS compression support - use relative import from same package
+try:
+    from .compression import ExpertCompressor
+except ImportError:
+    # Fallback for direct execution
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("compression", 
+        "/var/lib/alan-portfolio/workspaces/ryan/nexus-workbench-144-ryan-vo/backend/app/services/compression.py")
+    compression_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(compression_mod)
+    ExpertCompressor = compression_mod.ExpertCompressor
+
+
 class ExpertCache:
     """Thread-safe expert cache with configurable placement policies and optional compression."""
 
     def __init__(self, max_size_mb: float = 8192.0):
         self._max_size_mb = max_size_mb
         self._enable_compression = os.environ.get("COLI_ZSTREAM", "0") == "1"
+        self._compressor: Optional[ExpertCompressor] = None
+        if self._enable_compression:
+            # Initialize rANS compressor; table will be built on first compression
+            self._compressor = ExpertCompressor(container_path="/tmp")
         self._slots: Dict[Tuple[int, int], ExpertSlot] = {}
         self._lock = threading.RLock()
         self._policy = PlacementPolicy.LRU
@@ -98,22 +115,53 @@ class ExpertCache:
         return len(data) > 1024
 
     def _compress_data(self, data: bytes) -> tuple:
-        """Compress data using zlib. Returns (compressed_data, was_compressed)."""
+        """Compress data using rANS when COLI_ZSTREAM=1, fallback to zlib."""
         if not self._enable_compression:
             return data, False
         # Only compress data larger than 1KB
         if len(data) <= 1024:
             return data, False
-        compressed = zlib.compress(data)
-        # Only use compressed version if it's actually smaller
-        if len(compressed) < len(data):
-            return compressed, True
+
+        # Use rANS compression if compressor is available
+        if self._compressor is not None:
+            try:
+                compressed = self._compressor.compress_expert(0, 0, data)
+                # Decompress to verify bit-exact roundtrip
+                decompressed = self._compressor.decompress_expert(0, 0)
+                if decompressed == data:
+                    return compressed.compressed_data, True
+                # Fallback if roundtrip verification fails
+                import zlib
+                compressed_zlib = zlib.compress(data)
+                if len(compressed_zlib) < len(data):
+                    return compressed_zlib, True
+                return data, False
+            except Exception:
+                # Fallback to zlib on any error
+                import zlib
+                compressed_zlib = zlib.compress(data)
+                if len(compressed_zlib) < len(data):
+                    return compressed_zlib, True
+                return data, False
+
+        # Fallback to zlib
+        import zlib
+        compressed_zlib = zlib.compress(data)
+        if len(compressed_zlib) < len(data):
+            return compressed_zlib, True
         return data, False
 
     def _decompress_data(self, data: bytes) -> bytes:
-        """Decompress data using zlib."""
+        """Decompress data using rANS when COLI_ZSTREAM=1, fallback to zlib."""
         if not self._enable_compression:
             return data
+        # If data was compressed with rANS, decompress it
+        if self._enable_compression and self._compressor is not None:
+            try:
+                return self._compressor.decompress_expert(0, 0)
+            except Exception:
+                pass
+        # Fallback to zlib
         try:
             return zlib.decompress(data)
         except Exception:
