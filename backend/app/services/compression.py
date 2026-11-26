@@ -275,3 +275,27 @@ def compress_container(container_path: str, output_path: str, sample_data: bytes
 def decompress_expert_data(compressed: bytes, table: RANSTable, original_size: int) -> bytes:
     """Decompress expert data at cache-fill time."""
     return rans_decode(compressed, table, original_size)
+
+def main():
+    """CLI entry point for one-time container preparation pass."""
+    import sys
+    from pathlib import Path
+    
+    container_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/tmp")
+    sample_data = None
+    
+    if len(sys.argv) > 2:
+        sample_data = Path(sys.argv[2]).read_bytes()
+    
+    compressor = ExpertCompressor(container_path=str(container_path))
+    table = compressor.prepare(sample_data)
+    
+    # Save the index
+    index_path = container_path / "compression_index.json"
+    compressor.save_index(index_path)
+    
+    print(f"rANS table built with {len(table.cum_freq)} symbols")
+    print(f"Index saved to {index_path}")
+    print(f"Container path: {container_path}")
+    return 0
+
