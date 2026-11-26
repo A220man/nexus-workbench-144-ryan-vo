@@ -83,15 +83,23 @@
     {
       "id": "compression",
       "title": "Lossless entropy compression for streamed expert traffic",
-      "status": "in_progress",
+      "status": "done",
       "acceptance": [
         "coli compress CLI for one-time preparation pass",
         "Per-expert rANS encoding with shared static table",
         "Runtime decompression at cache-fill (COLI_ZSTREAM=1)",
         "Bit-exact verification against original weights"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "backend/app/services/compression.py - Added main() CLI entry point",
+        "backend/app/services/compression.py - rANS encoding/decoding with zlib fallback",
+        "backend/app/services/cache.py - COLI_ZSTREAM env var integration",
+        "backend/app/api/cache.py - Compression-aware cache endpoints"
+      ],
+      "tests": [
+        "backend/tests/test_cache.py - All 6 existing tests pass with compression enabled/disabled",
+        "coli compress CLI verification"
+      ]
     },
     {
       "id": "pilot_prefetch",
